@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dr. Flori — Engineering Statics</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=IBM+Plex+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0f0f0f;
+    --paper: #f5f0e8;
+    --accent: #c84b1f;
+    --accent2: #1a5276;
+    --muted: #7a7060;
+    --line: #d8d0be;
+    --card: #fff;
+    --tag-ws: #e8f4e8;
+    --tag-ws-text: #2d6a2d;
+    --tag-cs: #e8eef8;
+    --tag-cs-text: #1a3a6b;
+    --tag-vid: #fdf0e8;
+    --tag-vid-text: #8b3a10;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--paper); color: var(--ink); font-family: 'DM Sans', sans-serif; font-weight: 300; line-height: 1.6; min-height: 100vh; }
+  header { background: var(--ink); color: var(--paper); padding: 3rem 2rem 2.5rem; position: relative; overflow: hidden; }
+  header::before { content: 'Σ F = 0'; font-family: 'DM Serif Display', serif; font-size: clamp(4rem,14vw,11rem); color: rgba(255,255,255,0.04); position: absolute; right: -1rem; top: 50%; transform: translateY(-50%); white-space: nowrap; pointer-events: none; letter-spacing: -0.03em; }
+  .header-inner { max-width: 900px; margin: 0 auto; position: relative; z-index: 1; }
+  .course-tag { font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.75rem; display: block; }
+  header h1 { font-family: 'DM Serif Display', serif; font-size: clamp(2rem,5vw,3.4rem); font-weight: 400; line-height: 1.1; letter-spacing: -0.02em; margin-bottom: 0.5rem; }
+  header h1 em { font-style: italic; color: #b5a99a; }
+  .header-sub { color: #9a9080; font-size: 0.95rem; font-weight: 300; margin-top: 0.4rem; }
+  .controls { background: var(--ink); border-top: 1px solid rgba(255,255,255,0.08); padding: 1rem 2rem; }
+  .controls-inner { max-width: 900px; margin: 0 auto; width: 100%; display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; }
+  #search { background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; color: var(--paper); font-family: 'DM Sans', sans-serif; font-size: 0.88rem; padding: 0.5rem 0.85rem; flex: 1; min-width: 160px; outline: none; transition: border-color 0.2s; }
+  #search::placeholder { color: #6a6258; }
+  #search:focus { border-color: var(--accent); }
+  .filter-btn { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 6px; color: #9a9080; font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; letter-spacing: 0.08em; padding: 0.45rem 0.85rem; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+  .filter-btn:hover, .filter-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  main { max-width: 900px; margin: 0 auto; padding: 2.5rem 2rem 4rem; }
+  .unit { margin-bottom: 1.5rem; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--card); box-shadow: 0 1px 4px rgba(0,0,0,0.04); transition: box-shadow 0.2s; }
+  .unit:hover { box-shadow: 0 3px 14px rgba(0,0,0,0.08); }
+  .unit.hidden { display: none; }
+  .unit-header { display: flex; align-items: center; gap: 1rem; padding: 1.1rem 1.4rem; cursor: pointer; user-select: none; background: var(--card); border-bottom: 1px solid transparent; transition: background 0.15s, border-color 0.15s; }
+  .unit-header:hover { background: #faf8f4; }
+  .unit.open .unit-header { border-bottom-color: var(--line); background: #faf8f4; }
+  .unit-num { font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem; font-weight: 500; letter-spacing: 0.1em; color: var(--accent); background: #fdf0eb; border-radius: 4px; padding: 0.2rem 0.55rem; white-space: nowrap; flex-shrink: 0; }
+  .unit-title { font-family: 'DM Serif Display', serif; font-size: 1.15rem; font-weight: 400; flex: 1; letter-spacing: -0.01em; }
+  .unit-meta { display: flex; gap: 0.4rem; align-items: center; flex-shrink: 0; }
+  .count-badge { font-family: 'IBM Plex Mono', monospace; font-size: 0.65rem; padding: 0.15rem 0.45rem; border-radius: 20px; font-weight: 500; }
+  .count-ws  { background: var(--tag-ws);  color: var(--tag-ws-text); }
+  .count-cs  { background: var(--tag-cs);  color: var(--tag-cs-text); }
+  .count-vid { background: var(--tag-vid); color: var(--tag-vid-text); }
+  .chevron { width: 18px; height: 18px; fill: none; stroke: var(--muted); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: transform 0.25s; flex-shrink: 0; }
+  .unit.open .chevron { transform: rotate(180deg); }
+  .unit-body { display: none; }
+  .unit.open .unit-body { display: block; }
+  .topics-list { padding: 0.75rem 1.4rem 0.5rem; border-bottom: 1px solid var(--line); }
+  .topics-label { font-family: 'IBM Plex Mono', monospace; font-size: 0.65rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.5rem; }
+  .topics-pills { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+  .topic-pill { font-size: 0.8rem; background: #f0ece4; border-radius: 20px; padding: 0.2rem 0.7rem; color: var(--muted); }
+  .resources { padding: 1rem 1.4rem 1.25rem; }
+  .res-section { margin-bottom: 1rem; }
+  .res-section:last-child { margin-bottom: 0; }
+  .res-label { font-family: 'IBM Plex Mono', monospace; font-size: 0.65rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.5rem; }
+  .res-items { display: flex; flex-direction: column; gap: 0.4rem; }
+  .res-item { display: flex; align-items: center; gap: 0.6rem; padding: 0.5rem 0.75rem; border-radius: 7px; text-decoration: none; font-size: 0.875rem; font-weight: 400; transition: background 0.15s, transform 0.1s; border: 1px solid transparent; }
+  .res-item:hover { transform: translateX(2px); }
+  .res-item.worksheet { background: var(--tag-ws); color: var(--tag-ws-text); border-color: #c8e8c8; }
+  .res-item.worksheet:hover { background: #d8f0d8; }
+  .res-item.cribsheet  { background: var(--tag-cs); color: var(--tag-cs-text); border-color: #c0d4ee; }
+  .res-item.cribsheet:hover { background: #d0e4f8; }
+  .res-item.video      { background: var(--tag-vid); color: var(--tag-vid-text); border-color: #f0d8c0; }
+  .res-item.video:hover { background: #fde4cc; }
+  .res-icon { width: 16px; height: 16px; flex-shrink: 0; fill: currentColor; }
+  .placeholder-row { font-size: 0.8rem; color: #bbb; font-style: italic; padding: 0.25rem 0.75rem; }
+  .add-resource { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px dashed var(--line); }
+  .add-btn { font-family: 'IBM Plex Mono', monospace; font-size: 0.7rem; letter-spacing: 0.08em; padding: 0.35rem 0.75rem; border-radius: 6px; cursor: pointer; border: 1.5px dashed; background: transparent; transition: all 0.15s; }
+  .add-btn.ws  { color: var(--tag-ws-text);  border-color: #a0c8a0; }
+  .add-btn.cs  { color: var(--tag-cs-text);  border-color: #8fb0d8; }
+  .add-btn.vid { color: var(--tag-vid-text); border-color: #d0a070; }
+  .add-btn:hover { opacity: 0.75; transform: scale(1.03); }
+  .rm-btn { margin-left: auto; background: none; border: none; cursor: pointer; color: inherit; opacity: 0.4; font-size: 1.1rem; line-height: 1; padding: 0 0.2rem; transition: opacity 0.15s; }
+  .rm-btn:hover { opacity: 0.9; }
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 100; align-items: center; justify-content: center; backdrop-filter: blur(3px); }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--card); border-radius: 12px; width: min(440px,94vw); padding: 2rem; box-shadow: 0 20px 60px rgba(0,0,0,0.25); animation: popIn 0.2s cubic-bezier(0.34,1.56,0.64,1); }
+  @keyframes popIn { from{opacity:0;transform:scale(0.92) translateY(10px)} to{opacity:1;transform:scale(1) translateY(0)} }
+  .modal h3 { font-family: 'DM Serif Display', serif; font-size: 1.3rem; font-weight: 400; margin-bottom: 1.25rem; letter-spacing: -0.01em; }
+  .modal label { display: block; font-size: 0.78rem; font-family: 'IBM Plex Mono', monospace; letter-spacing: 0.08em; color: var(--muted); text-transform: uppercase; margin-bottom: 0.3rem; margin-top: 0.9rem; }
+  .modal label:first-of-type { margin-top: 0; }
+  .modal input { width: 100%; border: 1.5px solid var(--line); border-radius: 7px; padding: 0.55rem 0.85rem; font-family: 'DM Sans', sans-serif; font-size: 0.88rem; color: var(--ink); background: #faf8f4; outline: none; transition: border-color 0.2s; }
+  .modal input:focus { border-color: var(--accent2); }
+  .modal-actions { display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1.5rem; }
+  .btn-cancel { background: none; border: 1.5px solid var(--line); border-radius: 7px; padding: 0.5rem 1.1rem; font-family: 'DM Sans', sans-serif; font-size: 0.88rem; color: var(--muted); cursor: pointer; transition: all 0.15s; }
+  .btn-cancel:hover { border-color: var(--muted); color: var(--ink); }
+  .btn-save { background: var(--ink); border: none; border-radius: 7px; padding: 0.5rem 1.3rem; font-family: 'DM Sans', sans-serif; font-size: 0.88rem; color: var(--paper); cursor: pointer; transition: all 0.15s; }
+  .btn-save:hover { background: var(--accent); }
+  footer { text-align: center; padding: 2rem; font-family: 'IBM Plex Mono', monospace; font-size: 0.68rem; letter-spacing: 0.1em; color: var(--muted); border-top: 1px solid var(--line); text-transform: uppercase; }
+  @media(max-width:600px){ header{padding:2rem 1.25rem} main{padding:1.5rem 1rem 3rem} .controls{padding:.75rem 1rem} .unit-header{padding:.9rem 1rem} .unit-title{font-size:1rem} }
+</style>
+</head>
+<body>
+<header>
+  <div class="header-inner">
+    <span class="course-tag">Engineering Statics · Dr. Ralph Flori</span>
+    <h1>Statics<br><em>Course Resources</em></h1>
+    <p class="header-sub">Click a unit to expand topics &amp; access worksheets, crib sheets, and video lectures.</p>
+  </div>
+</header>
+<div class="controls">
+  <div class="controls-inner">
+    <input type="text" id="search" placeholder="Search units or topics…" oninput="filterUnits()">
+    <button class="filter-btn active" onclick="setFilter('all',this)">All</button>
+    <button class="filter-btn" onclick="setFilter('worksheet',this)">📄 Worksheets</button>
+    <button class="filter-btn" onclick="setFilter('cribsheet',this)">📋 Crib Sheets</button>
+    <button class="filter-btn" onclick="setFilter('video',this)">▶ Videos</button>
+  </div>
+</div>
+<main id="units-container"></main>
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <h3 id="modal-title">Add Resource</h3>
+    <label id="label-name">Resource Title</label>
+    <input type="text" id="input-name" placeholder="e.g. Unit 2 Worksheet A">
+    <label id="label-url">URL / Link</label>
+    <input type="text" id="input-url" placeholder="https://…">
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-save" onclick="saveResource()">Add Resource</button>
+    </div>
+  </div>
+</div>
+<footer>Dr. Flori · Engineering Statics · Course Resource Portal</footer>
+<script>
+// ── BASE PATH ──────────────────────────────────────────────────
+// The HTML file and the statics_files/ folder must sit in the same directory.
+// If hosting on a server, update BASE to the absolute path of statics_files/.
+const BASE = 'statics_files/';
+const f = p => BASE + p;
+
+// ── COURSE DATA ────────────────────────────────────────────────
+const UNITS = [
+  {
+    num:"01", title:"Introductory Topics",
+    topics:["What is Statics?","Vector-capable calculator (TI nSpire, TI 89)","Meet Dr. Flori"],
+    worksheets:[], cribsheets:[], videos:[]
+  },
+  {
+    num:"02", title:"Vectors",
+    topics:["2-D Vectors","3-D Vectors","Dot Product"],
+    worksheets:[
+      {name:"Representing Vectors in 2-D (Slides)", url:f("002 Representing Vectors in 2-D a.pptx")}
+    ],
+    cribsheets:[], videos:[]
+  },
+  { num:"03", title:"Particle Equilibrium", topics:["2-D Particle Equilibrium","3-D Particle Equilibrium"], worksheets:[], cribsheets:[], videos:[] },
+  { num:"04", title:"Moments and Couples", topics:["2-D Moments","3-D Moments","Cross Product","Moment about an Axis","Couples (2-D, 3-D)"], worksheets:[], cribsheets:[], videos:[] },
+  { num:"05", title:"Equivalent Systems", topics:["What is an Equivalent System?","Distributed Loads","2-D Problems","3-D Problems General","3-D Parallel Forces"], worksheets:[], cribsheets:[], videos:[] },
+  { num:"06", title:"Rigid Body Equilibrium", topics:["Conditions/Equations for Equilibrium","2-D Rigid Body Equilibrium","Two-Force Members","Three-Force Members","3-D Rigid Body Equilibrium","Degrees of Freedom, Proper Constraints","Statically Determinate/Indeterminate"], worksheets:[], cribsheets:[], videos:[] },
+  { num:"07", title:"Trusses", topics:["Introduction","Zero-Force Members","Method of Joints","Method of Sections","Matrix Methods for Trusses"], worksheets:[], cribsheets:[], videos:[] },
+  { num:"08", title:"Frames", topics:["Frame Analysis"], worksheets:[], cribsheets:[], videos:[] },
+  { num:"09", title:"Machines", topics:["Machine Analysis"], worksheets:[], cribsheets:[], videos:[] },
+  {
+    num:"10", title:"Internal Forces",
+    topics:["Introduction, Sign Conventions","2-D Problems","3-D Problems","Shear and Bending Moment Diagrams: Graphically","Shear and Bending Moment Diagrams: Equations"],
+    worksheets:[
+      {name:"Internal Forces — General Intro Notes", url:f("Exam 3 Review/Exam 3a Internal Forces Practice Problems/01 Internal Forces General Intro Notes 1.pdf")},
+      {name:"Exam 3 Review — Internal Force Problems", url:f("Exam 3 Review/Exam 3a Internal Forces Practice Problems/02 Exam 3 Review Internal Force Problems.pdf")},
+      {name:"T-Shaped Internal Force Practice Problem", url:f("Exam 3 Review/Exam 3a Internal Forces Practice Problems/03 T Shaped Internal Force Practice Problem.pdf")},
+      {name:"Practice: Internal Forces with Distributed Load (Blank)", url:f("Exam 3 Review/Exam 3a Internal Forces Practice Problems/04a Practice Internal Forces Problem with Distrib Load.pdf")},
+      {name:"Practice: Internal Forces with Distributed Load (Solution)", url:f("Exam 3 Review/Exam 3a Internal Forces Practice Problems/04b Practice Internal Forces Problem with Distrib Load Solution.pdf")},
+      {name:"Hibb 7.18,19 — Frame with Distributed Load", url:f("Exam 3 Review/Exam 3a Internal Forces Practice Problems/05 Internal Forces Hibb 7.18,19 Frame with Distrib Load.pdf")},
+      {name:"Hibb 7-41 — 3-D Internal Forces", url:f("Exam 3 Review/Exam 3a Internal Forces Practice Problems/06 Hibb 7-41 3-D Internal Forces Ex Prob.pdf")},
+      {name:"Deriving Shear and Bending Moment Relationships", url:f("Exam 3 Review/Exam 3b V and M Diagrams Practice Problems/00 Deriving Shear and Bending Moment Relationships 1.pdf")},
+      {name:"Integrate Load → Shear, Moment, Slope, Deflection", url:f("Exam 3 Review/Exam 3b V and M Diagrams Practice Problems/00 Integrate Load to get Shear, Moment, Slope and Deflection 1.pdf")},
+      {name:"V and M Diagrams — Three Rules and Two Simple Examples", url:f("Exam 3 Review/Exam 3b V and M Diagrams Practice Problems/01 V and M Diagrams  Review of Three Rules and Two Simple Examples 1.pdf")},
+      {name:"V and M Diagrams — Behavior of Distributed Loads", url:f("Exam 3 Review/Exam 3b V and M Diagrams Practice Problems/02 V and M Diagrams behavior of distributed loads.pdf")},
+      {name:"V and M — Simple: Point Loads and Supports", url:f("Exam 3 Review/Exam 3b V and M Diagrams Practice Problems/03 V and M simple with point loads and supports.pdf")},
+      {name:"Ex F7.4 — Uniform Load (Graphical)", url:f("Exam 3 Review/Exam 3b V and M Diagrams Practice Problems/04 Ex Prob F7.4 Modified Uniform Load.pdf")},
+      {name:"Ex F7.6 — Ascending Triangular Load (Graphical)", url:f("Exam 3 Review/Exam 3b V and M Diagrams Practice Problems/05 Ex Prob F7.6 Ascending Triangular Load.pdf")},
+      {name:"Ex F7.5 — Descending Triangular Load (Three Ways)", url:f("Exam 3 Review/Exam 3b V and M Diagrams Practice Problems/06 Ex Prob F7.5 Descending Triangular Load Three Ways6.pdf")},
+      {name:"Prob 7.16 — Trapezoidal Load, TI-89 for V Root", url:f("Exam 3 Review/Exam 3b V and M Diagrams Practice Problems/07 Prob 7.16 V and M Trapez Load, Use TI 89 for V Root and Integrate for Change in M.pdf")},
+      {name:"SBM Example 1 — Uniform Load + Equations (1 Interval)", url:f("Exam 3 Review/Exam 3b V and M Diagrams Practice Problems/Internal Forces Shear and Bending Moment Diagrams Example Problem 1 Uniform Load plus Equations for One Interval.pdf")},
+      {name:"SBM Example 2 — Triangular Load + Equations", url:f("Exam 3 Review/Exam 3b V and M Diagrams Practice Problems/Internal Forces Shear and Bending Moment Diagrams Example Problem 2 Triangular Load plus Equations.pdf")},
+      {name:"V&M Equations — How to Write V and M Equations", url:f("Exam 3 Review/Exam 3b V and M Diagrams Practice Problems/V and M Equations/Internal Forces Shear and Bending Moment Diagrams How to Write V and M Equations 1.pdf")},
+      {name:"V&M Equations — Ex F7.4 Uniform Load", url:f("Exam 3 Review/Exam 3b V and M Diagrams Practice Problems/V and M Equations/01 Ex Prob F7.4 Modified Uniform Load.pdf")},
+      {name:"V&M Equations — Ex F7.6 Ascending Triangular", url:f("Exam 3 Review/Exam 3b V and M Diagrams Practice Problems/V and M Equations/02 Ex Prob F7.6 Ascending Triangular Load.pdf")},
+      {name:"V&M Equations — Prob 7.16 Trapezoidal Load", url:f("Exam 3 Review/Exam 3b V and M Diagrams Practice Problems/V and M Equations/03 Prob 7.16 V and M Trapez Load, Use TI 89 for V Root and Integrate for Change in M.pdf")},
+      {name:"V&M Equations — Practice Exam 3A (1.5 and 1.6)", url:f("Exam 3 Review/Exam 3b V and M Diagrams Practice Problems/V and M Equations/04 Practice Exam 3A V and M equations 1.5 and 1.6.pdf")},
+      {name:"V&M Equations — Practice Exam 3B Problem 11", url:f("Exam 3 Review/Exam 3b V and M Diagrams Practice Problems/V and M Equations/05 Practice Exam 3B M equation problem 11.pdf")},
+      {name:"V&M Equations — Practice Exam C (Blank)", url:f("Exam 3 Review/Exam 3b V and M Diagrams Practice Problems/V and M Equations/06a V and M Practice Exam C with Equation Unworked.pdf")},
+      {name:"V&M Equations — Practice Exam C (Solution)", url:f("Exam 3 Review/Exam 3b V and M Diagrams Practice Problems/V and M Equations/06b V and M Practice Exam C with Equation Solution.pdf")},
+      {name:"V&M Equations — 2022 Practice Exam with TI-89", url:f("Exam 3 Review/Exam 3b V and M Diagrams Practice Problems/V and M Equations/07 2022 Practice Exam Verify V Eqn and graph V and M, use TI 89 for root and to integrate V.pdf")}
+    ],
+    cribsheets:[], videos:[]
+  },
+  {
+    num:"11", title:"Centroids",
+    topics:["What is a Centroid?","Integration","Composite Areas","Composite Lines, Volumes","Pappus and Guldinus Method"],
+    worksheets:[
+      {name:"Centroids of Common Shapes by Integration", url:f("Exam 3 Review/Exam 3d Centroid Problems/00 Integrating for Centroids of Common Shapes/000 Centroids of Common Shapes by Integration.pdf")},
+      {name:"Centroids of Common Shapes (Reference)", url:f("Exam 3 Review/Exam 3d Centroid Problems/01 Centroids by Integration/00 Centroids of Common Shapes.pdf")},
+      {name:"Centroids Intro — What is a Centroid?", url:f("Exam 3 Review/Exam 3d Centroid Problems/01 Centroids by Integration/01 Centroids Intro Notes What is a Centroid.pdf")},
+      {name:"Area Centroids by Integration — Best Choices of dA", url:f("Exam 3 Review/Exam 3d Centroid Problems/01 Centroids by Integration/02 Area Centroids by Integration, Best Choices of dA.pdf")},
+      {name:"Ex Prob Hibbeler 9-5 — Area Centroid Various dA Elements", url:f("Exam 3 Review/Exam 3d Centroid Problems/01 Centroids by Integration/03 Example Problem Hibbeler 9-5 Area Centroid Various dA Elements Updated.pdf")},
+      {name:"Ex Prob — Area Bounded by Two Lines", url:f("Exam 3 Review/Exam 3d Centroid Problems/01 Centroids by Integration/05 Example Problem Area Bounded by Two Lines Updated.pdf")},
+      {name:"Centroids and P&G Equations", url:f("Exam 3 Review/Exam 3d Centroid Problems/01 Centroids by Integration/06 Centroids and P and G Equations a.pdf")},
+      {name:"Composite Area Centroids — Example Problems", url:f("Exam 3 Review/Exam 3d Centroid Problems/02 Composite Centroids/02 Example Problems Composite Area Centroids 1.pdf")},
+      {name:"Composite Centroids — Line and Volume Examples", url:f("Exam 3 Review/Exam 3d Centroid Problems/02 Composite Centroids/03 Example Problems Composite Centroids Line, Volume.pdf")},
+      {name:"HW Problem 9-78 — Composite Centroid Table", url:f("Exam 3 Review/Exam 3d Centroid Problems/02 Composite Centroids/04 HW Problem 9-78 Composite Centroid Table.pdf")},
+      {name:"Pappus & Guldinus — Example Problems", url:f("Exam 3 Review/Exam 3d Centroid Problems/03 P and G Problems Pappus and Guldinus/02 Example Problems P and G.pdf")},
+      {name:"Pappus & Guldinus — Extra Review Problems (Blank)", url:f("Exam 3 Review/Exam 3d Centroid Problems/03 P and G Problems Pappus and Guldinus/03a Exam 3 Review Extra Centroid and PG Problems Blank.pdf")},
+      {name:"Pappus & Guldinus — Extra Review Problems (Solutions)", url:f("Exam 3 Review/Exam 3d Centroid Problems/03 P and G Problems Pappus and Guldinus/03b Exam 3 Review Extra Centroid and PG Problems Solutions b.pdf")},
+      {name:"P&G Example — Donut Shape", url:f("Exam 3 Review/Exam 3d Centroid Problems/03 P and G Problems Pappus and Guldinus/04 P and G Example for a Donut Shape.pdf")}
+    ],
+    cribsheets:[], videos:[]
+  },
+  {
+    num:"12", title:"Fluid Pressure",
+    topics:["Introduction","Flat Plates — Constant Width","Curved Surfaces","Flat Plates — non-Constant Width: Integration","Flat Plates — non-Constant Width: FR=g·Z·Area (GZA)"],
+    worksheets:[
+      {name:"Fluid Pressure — Lecture Outline and Problem Types", url:f("Fluid Pressure/01 Fluid Pressure Lecture Outline, Problem Types.pdf")},
+      {name:"Fluid Pressure — Intro Notes and SI Units", url:f("Fluid Pressure/02 Fluid Pressure Intro Notes and SI Units.pdf")},
+      {name:"Fluid Pressure — Centroid and Area Formulas", url:f("Fluid Pressure/03 Fluid Pressure Centroid and Area Formulas.pdf")},
+      {name:"Center of Pressure — Pics from Hibbeler Ch 9", url:f("Fluid Pressure/04 Center of Pressure Pix from Hibbeler Ch 9.pdf")},
+      {name:"Pressure/Force on a Horizontal Plate", url:f("Fluid Pressure/05 Pressure or Force on a Horizontal Plate 1.pdf")},
+      {name:"Simple Formula — Alternative to Integration (Variable Width)", url:f("Fluid Pressure/06 Simple Formula Alternative to Integration for Flat Plates of Variable Width.pdf")},
+      {name:"Fluid Pressure by Integration — Problems", url:f("Fluid Pressure/07 Fluid Pressure by Integration Problems.pdf")},
+      {name:"Dam Tipping Problem", url:f("Fluid Pressure/08 Dam Tipping 1.pdf")},
+      {name:"Gate Opening Problem", url:f("Fluid Pressure/09 Gate Opening Problem 1.pdf")},
+      {name:"Force Down and Up on Horizontal Surface and Archimedes", url:f("Fluid Pressure/10 Force Down and Up on Horiz Surface and Archimedes.pdf")},
+      {name:"Simple Problem Worked Three Ways (Set 1)", url:f("Fluid Pressure/11 Simple Problem Worked Three Ways b.pdf")},
+      {name:"Another Fluid Pressure Problem Worked Three Ways", url:f("Fluid Pressure/Another Fluid Pressure Problem Worked Three Ways.pdf")},
+      {name:"Third Fluid Pressure Example Worked Three Ways", url:f("Fluid Pressure/Third Fluid Pressure Example Problem worked Three Ways.pdf")},
+      {name:"Exam 4 Review — Fluid Pressure Overview", url:f("Exam 4 Review/Fluid Pressure Review Sheets/Exam 4 Review Fluid Pressure.pdf")},
+      {name:"Exam 4 Review — Dam Tipping and Gate Opening", url:f("Exam 4 Review/Fluid Pressure Review Sheets/Dam Tipping, Gate Opening Problems 1.pdf")},
+      {name:"Exam 4 Review — Integration Problems", url:f("Exam 4 Review/Fluid Pressure Review Sheets/Fluid Pressure by Integration Problems.pdf")},
+      {name:"Exam 4 Review — Simple Formula (GZA)", url:f("Exam 4 Review/Fluid Pressure Review Sheets/Simple Formula Alternative to Integration for Flat Plates of Variable Width.pdf")}
+    ],
+    cribsheets:[], videos:[]
+  },
+  {
+    num:"13", title:"Moments of Inertia",
+    topics:["Introduction","Area MOI: Integration","Parallel Axis Theorem for MOI","Area MOI: Composite Areas","Product of Inertia: Integration","Parallel Axis Theorem for POI","Area POI: Composite Areas","POI +/− in Various Quadrants","MOI and POI for Various Beam Cross Sections"],
+    worksheets:[
+      {name:"Overview Notes and Comments about Area MOI's", url:f("MOI Intro and by Integration/01 Overview Notes and Comments about Area MOI's.pdf")},
+      {name:"Notes on Differential MOI Formula and Choices of dA (v1)", url:f("MOI Intro and by Integration/01b New notes on differential MOI formula and choices of dA.pdf")},
+      {name:"Notes on Differential MOI Formula and Choices of dA (v2)", url:f("MOI Intro and by Integration/01c New notes on differential MOI formula and choices of dA.pdf")},
+      {name:"Derivation of Parallel Axis Theorem", url:f("MOI Intro and by Integration/02a Derivation of Parallel Axis Theorem.pdf")},
+      {name:"Using PAT to Find I_base for a Rectangle", url:f("MOI Intro and by Integration/02b Using PAT to find I base for a Rectangle.pdf")},
+      {name:"Area MOI and POI for Common Shapes", url:f("MOI Intro and by Integration/03 Area MOI and Product of Inertia for Common Shapes 2 Updated.pdf")},
+      {name:"Choices of dA and Differential Form of PAT", url:f("MOI Intro and by Integration/04 Choices of dA and Differential Form of PAT.pdf")},
+      {name:"Hibbeler Ex Prob 10.2 — MOI by Integration", url:f("MOI Intro and by Integration/05 Hibbeler Example Prob 10.2 MOI by Integration d.pdf")},
+      {name:"MOI by Integration — Area Between Two Lines", url:f("MOI Intro and by Integration/06 MOI by Integration Area between Two Lines 1.pdf")},
+      {name:"MOI by Integration — Plus Find Imax, Imin, ThetaP", url:f("MOI Intro and by Integration/07 MOI by Integration plus find Imax, Imin and ThetaP.pdf")},
+      {name:"Integration of MOI and POI for Common Shapes", url:f("MOI Intro and by Integration/08 Integration of MOI and POI for Common Shapes.pdf")},
+      {name:"Applications of Area MOI from Mechanics of Materials", url:f("MOI Intro and by Integration/09 Applications of Area MOI's from Mech of Materials.pdf")},
+      {name:"PAT Derivation and General PAT Formula", url:f("MOI for Composite Areas/01 Derivation of Parallel Axis Theorem and General PAT Formula.pdf")},
+      {name:"Composite MOI — Find I_base Formulas", url:f("MOI for Composite Areas/02 Composite MOI Find I base Formulas.pdf")},
+      {name:"Composite MOI — Identifying b and h for Formulas", url:f("MOI for Composite Areas/03 Composite MOI Identifying b and h for Formulas.pdf")},
+      {name:"Composite MOI Ex Prob 1 — Simple", url:f("MOI for Composite Areas/05 Composite MOI Ex Prob 1 Simple.pdf")},
+      {name:"Composite MOI Ex Prob 2 — Multiple Shapes with Hole", url:f("MOI for Composite Areas/06 Composite MOI Ex Prob 2 Multiple Shapes with Hole.pdf")},
+      {name:"Composite MOI Ex Prob 3 — Multiple Shapes Touch Axes", url:f("MOI for Composite Areas/07 Composite MOI Ex Prob 3 Multiple Shapes Touch Axes.pdf")},
+      {name:"Composite MOI Ex Prob 4 — W-Shape Beam", url:f("MOI for Composite Areas/08 Composite MOI Ex Prob 4 W Shape Beam.pdf")},
+      {name:"Hibbeler vs Flori Formulas — Half Circle and Quarter Circle", url:f("MOI for Composite Areas/Hibbeler Crib Sheet vs R Flori Formulas for Half Circle and Quarter Circle.pdf")},
+      {name:"POI — Intro and Overview", url:f("POI Product of Inertia Intro/01 POI Product of Inertia Intro and Overview.pdf")},
+      {name:"POI — Area MOI and POI for Common Shapes", url:f("POI Product of Inertia Intro/02a Area MOI and Product of Inertia for Common Shapes 2 Updated.pdf")},
+      {name:"POI — PAT, Shapes, Notes", url:f("POI Product of Inertia Intro/02b Product of Inertia, PAT, Shapes, Notes 2.pdf")},
+      {name:"POI — Derivation of PAT for Product of Inertia", url:f("POI Product of Inertia Intro/03 Derivation of PAT for Product of Inertia.pdf")},
+      {name:"POI — Applying PAT to Hibbeler Crib Sheet Shapes", url:f("POI Product of Inertia Intro/03b Applying PAT for POI to Hibbeler Crib Sheet Shapes.pdf")},
+      {name:"POI — Three Simple Examples Showing +Ixy and −Ixy", url:f("POI Product of Inertia Intro/06 POI Three Simple Example Problems to Show +Ixy and Neg Ixy.pdf")},
+      {name:"POI by Integration — Intro and Example 1", url:f("POI Product of Inertia by Integration/01 POI Ixy by Integration Intro and Example 1.pdf")},
+      {name:"POI by Integration — Three dA's Example 2", url:f("POI Product of Inertia by Integration/02 POI Integration Using Three dA's Example 2.pdf")},
+      {name:"POI by Integration — Area Bounded by Two Lines (Example 3)", url:f("POI Product of Inertia by Integration/03 POI Integration Using Three dA's Area Bounded by Two Lines Example 3.pdf")},
+      {name:"POI by Integration — TI-89 Examples", url:f("POI Product of Inertia by Integration/04 POI Integration with TI-89 Examples.pdf")},
+      {name:"POI Composite — Notes", url:f("POI for Composite Areas/02 Product of Inertia for Composite Areas Notes.pdf")},
+      {name:"POI Composite — MOI and POI Rules for Holes", url:f("POI for Composite Areas/03 MOI and POI Rules for Holes.pdf")},
+      {name:"POI Composite Ex Prob 1", url:f("POI for Composite Areas/04 POI Ixy Composite Area Ex Problem 1.pdf")},
+      {name:"POI Composite Ex Prob 2", url:f("POI for Composite Areas/05 POI Ixy Composite Area Ex Problem 2.pdf")},
+      {name:"POI Composite Ex Prob 3", url:f("POI for Composite Areas/06 POI Ixy Composite Area Ex Problem 3.pdf")},
+      {name:"POI Composite Ex Prob 4", url:f("POI for Composite Areas/07 POI Ixy Composite Area Ex Problem 4.pdf")},
+      {name:"POI Composite Ex Prob 5", url:f("POI for Composite Areas/08 POI Ixy Composite Area Ex Problem 5.pdf")},
+      {name:"POI — Triangle and Quarter Circle: Ixy, Imax, Imin", url:f("POI for Composite Areas/06 Example Prob Shape with Triangle and Qtr Circle Ixy, Imax, Imin.pdf")},
+      {name:"POI — Problem Not Symmetric but Zero Ixy", url:f("POI for Composite Areas/09 Ixy Problem which is not symmetric but that has Zero Ixy.pdf")},
+      {name:"POI — Four MOI Problems + Imax, Imin, ThetaP", url:f("POI for Composite Areas/10 Four MOI Example Problems Composite Areas Plus Imax, Imin, ThetaP.pdf")},
+      {name:"Hibbeler Ex Prob 10.9 — Ix, Iy, Ixy and Set Up MC", url:f("POI for Composite Areas/Hibbeler Ex Prob 10.9 Ix, Iy, Ixy and Set Up MC.pdf")},
+      {name:"Hibbeler Crib Sheet Formulas for Ixy (Right Triangles & Quarter Circles)", url:f("POI for Composite Areas/Hibbeler's Crib Sheet Formulas for Ixy for Right Triangles and Quarter Circles.pdf")},
+      {name:"Exam 4 Review — POI Integration Ex 1", url:f("Exam 4 Review/POI Review Sheets/01 POI Integration Using Three dA's Example 1.pdf")},
+      {name:"Exam 4 Review — POI Signs for Various Orientations", url:f("Exam 4 Review/POI Review Sheets/04 POI Signs for Various Orientations.pdf")},
+      {name:"Exam 4 Review — POI Ixy by Integration", url:f("Exam 4 Review/POI Review Sheets/Exam 4 Review POI Ixy  by Integration Updated 2.pdf")},
+      {name:"Exam 4 Review — POI Integration with TI-89", url:f("Exam 4 Review/POI Review Sheets/POI Integration with TI-89 Examples.pdf")},
+      {name:"Exam 4 Review — POI Many Areas Problem", url:f("Exam 4 Review/POI Review Sheets/POI Many Areas Problem.pdf")},
+      {name:"Exam 4 Review — POI: Calculator vs No Calculator", url:f("Exam 4 Review/POI Review Sheets/POI by Integration Caculator vs No Calculator.pdf")},
+      {name:"Exam 4 Review — POI Composite (Hibbeler Formulas)", url:f("Exam 4 Review/POI Review Sheets/POI for Composite Areas Using Hibbeler's Ixy Formulas.pdf")},
+      {name:"Exam 4 Review — POI Conceptual Questions", url:f("Exam 4 Review/POI Review Sheets/Practice Exam 4 POI Conceptual Questions Review 2022.pdf")},
+      {name:"Exam 4 Review — MOI Overview", url:f("Exam 4 Review/MOI Review Sheets/01 Overview Notes and Comments about Area MOI's.pdf")},
+      {name:"Exam 4 Review — MOI by Integration", url:f("Exam 4 Review/MOI Review Sheets/02 Exam 4 Review MOI by Integration.pdf")}
+    ],
+    cribsheets:[
+      {name:"Crib Sheet Page 1 (MOI Intro)", url:f("MOI Intro and by Integration/Crib Sheet page 1 (2).pdf")},
+      {name:"Crib Sheet Page 2 (Composite MOI)", url:f("MOI for Composite Areas/04 Crib Sheet page 2.pdf")},
+      {name:"Hibbeler Crib Sheet Page 1 (POI)", url:f("POI Product of Inertia Intro/Hibbeler Crib Sheet page 1.pdf")},
+      {name:"Hibbeler Crib Sheet Page 2 (POI)", url:f("POI Product of Inertia Intro/Hibbeler Crib Sheet page 2.pdf")}
+    ],
+    videos:[]
+  },
+  {
+    num:"14", title:"Area Moments of Inertia: Transformation",
+    topics:["Introduction: Why need max/min MOI?","Derive MOI Transformation Equations","MOI Transformation: Max/Min MOI, MOI/POI at an Angle","Derive Mohr's Circle","Mohr's Circle: Find max and min MOI","Mohr's Circle: Find MOI, POI at an Angle","Mohr's Circle Exam Review"],
+    worksheets:[
+      {name:"Transformation Equations Derivation", url:f("MOI Transformation Equations/01 Transformation Equations Derivation 1.pdf")},
+      {name:"Area MOI Transformation Equations", url:f("MOI Transformation Equations/02 Area Moments of Inertia Transformation Equations 4.pdf")},
+      {name:"Worksheet — Iu and Iv at Arbitrary Angle (Example)", url:f("MOI Transformation Equations/03a Worksheet Finding Iu and Iv at Arbitrary Angle Using Transformation Eqns 1 Ex Problem.pdf")},
+      {name:"Worksheet — Iu and Iv at Arbitrary Angle (Blank)", url:f("MOI Transformation Equations/03b Worksheet Finding Iu and Iv at Arbitrary Angle Using Transformation Eqns 1.pdf")},
+      {name:"Worksheet — Principal MOI Using Equations (Example Hibb 10.9)", url:f("MOI Transformation Equations/04a Worksheet Principal MOI Using Equations 1 Example Prob Hib 10.9 b.pdf")},
+      {name:"Worksheet — Principal MOI Using Equations (Blank)", url:f("MOI Transformation Equations/04b Worksheet Principal MOI Using Equations 1.pdf")},
+      {name:"Mohr's Circle Derivation", url:f("Mohr's Circle for MOI/01 Mohr's Circle Derivation New Version 2.pdf")},
+      {name:"Hibbeler Ex Prob 10.9 — Composite Area + MC, Imax, Imin, ThetaP", url:f("Mohr's Circle for MOI/02a Hibbeler Example Prob 10.9 Composite Area plus MC, Imax, Imin, ThetaP.pdf")},
+      {name:"MC Ex Prob — Finding Iu and Iv at Arbitrary Angle", url:f("Mohr's Circle for MOI/03 Example Problem Finding Iu and Iv at Arbitrary Angle.pdf")},
+      {name:"MC Ex Prob — At Another Angle", url:f("Mohr's Circle for MOI/05 Example Prob MC at Another Angle.pdf")},
+      {name:"Direction of 2·ThetaP for Various Values of Ix, Iy, Ixy", url:f("Mohr's Circle for MOI/06b Direction of 2 ThetaP for Various Values of Ix, Iy, Ixy a.pdf")},
+      {name:"MC Plotting — 12 Examples in Various Quadrants", url:f("Mohr's Circle for MOI/08 MC Plotting 12 Examples in Various Quadrants.pdf")},
+      {name:"POI — Transformation Equations Derivation", url:f("POI Product of Inertia Intro/04 Transformation Equations Derivation 1.pdf")},
+      {name:"POI — Area MOI Transformation Equations", url:f("POI Product of Inertia Intro/05 Area Moments of Inertia Transformation Equations 4.pdf")},
+      {name:"Exam 4 Review — Transformation Equations", url:f("Exam 4 Review/Mohr's Circle Review Sheets/00 Area Moments of Inertia Transformation Equations 4.pdf")},
+      {name:"Exam 4 Review — MC Day 2: 2θ, Neg Ixy with Iy", url:f("Exam 4 Review/Mohr's Circle Review Sheets/00 MC Day 2 Notes Summary 2 theta, Neg Ixy with Iy, Iy 180 from Ix.pdf")},
+      {name:"Exam 4 Review — Conceptual MC Problems (Expanded)", url:f("Exam 4 Review/Mohr's Circle Review Sheets/01 Exam 4 Conceptual MC Problems and Questions Expanded c.pdf")},
+      {name:"Exam 4 Review — Mohr's Circle Terminology", url:f("Exam 4 Review/Mohr's Circle Review Sheets/02 Exam 4 Mohr's Circle Terminology 2.pdf")},
+      {name:"Exam 4 Review — Practice Conceptual MC Questions", url:f("Exam 4 Review/Mohr's Circle Review Sheets/03 Practice Exam 4 Conceptual MC Questions c.pdf")},
+      {name:"Exam 4 Review — MC Simple Cases in Various Quadrants", url:f("Exam 4 Review/Mohr's Circle Review Sheets/08 Mohr's Circle Simple Cases with Ix and Iy in Various Quadrants.pdf")},
+      {name:"Exam 4 Review — Additional MC Simple Examples", url:f("Exam 4 Review/Mohr's Circle Review Sheets/Additional MC Simple Example Problems.pdf")},
+      {name:"Exam 4 Review — One More Conceptual MC Problem (Tricky)", url:f("Exam 4 Review/Mohr's Circle Review Sheets/One More Conceptual MC Exam Problem, Tricky.pdf")},
+      {name:"Exam 4 Review — Practice Conceptual MC Problems Expanded (c)", url:f("Exam 4 Review/Mohr's Circle Review Sheets/Practice Exam 4 Conceptual MC Problems and Questions Expanded c.pdf")},
+      {name:"Exam 4 Review — Simple MC Exam Problems General Notes", url:f("Exam 4 Review/Mohr's Circle Review Sheets/Simple MC Exam Probs General Notes and Example Problems.pdf")},
+      {name:"Exam 4 Review — ThetaP Equation Notes", url:f("Exam 4 Review/Mohr's Circle Review Sheets/ThetaP Equation gives the angle FROM Ix TO the Nearest Principal Imax or Imin.pdf")}
+    ],
+    cribsheets:[
+      {name:"Crib Sheet Page 1 (Exam 4)", url:f("Exam 4 Review/Crib Sheet page 1 (2).pdf")},
+      {name:"Crib Sheet Page 2 (Exam 4)", url:f("Exam 4 Review/Crib Sheet page 2 (2).pdf")}
+    ],
+    videos:[]
+  },
+  { num:"15", title:"Exam 1 Review", topics:["Review of Units 1–4"], worksheets:[], cribsheets:[], videos:[] },
+  { num:"16", title:"Exam 2 Review", topics:["Review of Units 5–7"], worksheets:[], cribsheets:[], videos:[] },
+  {
+    num:"17", title:"Exam 3 Review",
+    topics:["Internal Forces","V and M Diagrams","Friction","Wedges","Belt Friction","Centroids"],
+    worksheets:[
+      {name:"Exam 3 Topics Overview and Crib Sheet Review", url:f("Exam 3 Review/0 Exam 3 Topics Overview and Crib Sheet Review/Exam 3 Review Sheet, Review of Crib Sheets a.pdf")},
+      {name:"Exam 3 Review — Kinds of Problems", url:f("Exam 3 Review/0 Exam 3 Topics Overview and Crib Sheet Review/Exam 3 Review of Kinds of Problems.pdf")},
+      {name:"Practice Exam 3A — Blank (Dr. Koen)", url:f("Exam 3 Review/Exam 3 Practice Exams/01a Practice Exam 3 A from Dr Koen Blank.pdf")},
+      {name:"Practice Exam 3A — Solutions (Dr. Koen)", url:f("Exam 3 Review/Exam 3 Practice Exams/01b Practice Exam 3 A from Dr Koen  Solutions.pdf")},
+      {name:"Practice Exam 3B — Blank", url:f("Exam 3 Review/Exam 3 Practice Exams/02a Practice Exam 3 B Blank.pdf")},
+      {name:"Practice Exam 3B — Solutions (Corrected)", url:f("Exam 3 Review/Exam 3 Practice Exams/02b Practice Exam 3 B Solutions Corrected c.pdf")},
+      {name:"2022 Spring Exam 3 — Unworked", url:f("Exam 3 Review/Exam 3 Practice Exams/2022 Spring Exam 3 for Practice Unworked.pdf")},
+      {name:"2022 Spring Exam 3 — Solution", url:f("Exam 3 Review/Exam 3 Practice Exams/2022 Spring Exam 3 for Practice Solution.pdf")},
+      {name:"Friction Intro Lecture Notes", url:f("Exam 3 Review/Exam 3c Friction Problems/01 General Friction Notes and Problems/01 Friction Intro Lecture Notes.pdf")},
+      {name:"Friction — Crate, Ladder, Box on Slope", url:f("Exam 3 Review/Exam 3c Friction Problems/01 General Friction Notes and Problems/02 Friction Intro Example Problems Crate, Ladder, Box on Slope.pdf")},
+      {name:"General Friction Problems from Old Exams", url:f("Exam 3 Review/Exam 3c Friction Problems/01 General Friction Notes and Problems/03 General Friction Problems from Old Exams.pdf")},
+      {name:"Wedges Intro Notes", url:f("Exam 3 Review/Exam 3c Friction Problems/02 Wedges Notes and Problems/01 Wedges Intro Notes 1.pdf")},
+      {name:"Self-Locking Equations — One Mu and Two Mu's", url:f("Exam 3 Review/Exam 3c Friction Problems/02 Wedges Notes and Problems/02 Self Locking Equations One Mu and Two Mu's.pdf")},
+      {name:"Simple Wedge Problem — Wedge Raising Beam", url:f("Exam 3 Review/Exam 3c Friction Problems/02 Wedges Notes and Problems/02 Simple Wedge Problem Wedge Raising Beam.pdf")},
+      {name:"Two Wedge Problem — Raising Case, Zero Friction on Wall", url:f("Exam 3 Review/Exam 3c Friction Problems/02 Wedges Notes and Problems/03 Two Wedge Problem Raising Case, Zero Friction on Wall.pdf")},
+      {name:"Simple Wedge Problem — Angled Member Raising Case", url:f("Exam 3 Review/Exam 3c Friction Problems/02 Wedges Notes and Problems/05 Simple Wedge Problem Angled Member Raising Case.pdf")},
+      {name:"Wedge Problems from Old Exams", url:f("Exam 3 Review/Exam 3c Friction Problems/02 Wedges Notes and Problems/06 Wedge Problems from Old Exams.pdf")},
+      {name:"Two Ways to Check Self-Locking for a Wedge", url:f("Exam 3 Review/Exam 3c Friction Problems/02 Wedges Notes and Problems/07 Two Ways to Check Self Locking for a Wedge.pdf")},
+      {name:"Belt Friction Intro Notes", url:f("Exam 3 Review/Exam 3c Friction Problems/03 Belt Friction Notes and Problems/01 Friction on Flat Belts Intro Notes 1.pdf")},
+      {name:"Belt Friction Practice Problems from Old Exams", url:f("Exam 3 Review/Exam 3c Friction Problems/03 Belt Friction Notes and Problems/02 Belt Friction Practice Problems from Old Exams.pdf")},
+      {name:"Belt Friction — Oil Filter Wrench / Band Brake", url:f("Exam 3 Review/Exam 3c Friction Problems/03 Belt Friction Notes and Problems/03 Example Problem Oil Filter Wrench or Band Brake.pdf")}
+    ],
+    cribsheets:[
+      {name:"Crib Sheet Page 1 (Exam 3)", url:f("Exam 3 Review/Crib Sheet page 1 (2).pdf")},
+      {name:"Crib Sheet Page 2 (Exam 3)", url:f("Exam 3 Review/Crib Sheet page 2 (2).pdf")}
+    ],
+    videos:[]
+  },
+  {
+    num:"18", title:"Exam 4 Review",
+    topics:["Fluid Pressure","MOI","POI","Mohr's Circle"],
+    worksheets:[
+      {name:"Exam 4 Topics and Crib Sheet Review", url:f("Exam 4 Review/Exam 4 Topics and Crib Sheet Review.pdf")},
+      {name:"Practice Exam 4 from Dr. Koen — Blank", url:f("Exam 4 Review/Exam 4 Practice Exams and Keys/Practice Exam 4 from Dr Koen with Space to Work.pdf")},
+      {name:"Practice Exam 4 from Dr. Koen — Key", url:f("Exam 4 Review/Exam 4 Practice Exams and Keys/Practice Exam 4 from Dr Koen Key.pdf")},
+      {name:"Practice Exam 4A 2022 — Blank", url:f("Exam 4 Review/Exam 4 Practice Exams and Keys/Practice Exam 4 A 2022.pdf")},
+      {name:"Practice Exam 4A 2022 — Solution (Corrected)", url:f("Exam 4 Review/Exam 4 Practice Exams and Keys/Practice Exam 4 A Solution Corrected.pdf")},
+      {name:"Practice Exam 4B 2022 — Blank", url:f("Exam 4 Review/Exam 4 Practice Exams and Keys/Practice Exam 4 B 2022.pdf")},
+      {name:"Practice Exam 4B 2022 — Solution", url:f("Exam 4 Review/Exam 4 Practice Exams and Keys/Practice Exam 4 B 2022 Solution b.pdf")},
+      {name:"2022 Fall Exam 4 — Practice (Unworked)", url:f("Exam 4 Review/Exam 4 Practice Exams and Keys/2022 Fall Exam 4 Practice Exam includes some problems from other semesters not worked.pdf")},
+      {name:"2022 Fall Exam 4 — Solution", url:f("Exam 4 Review/Exam 4 Practice Exams and Keys/2022 Fall Exam 4 for Practice Solution.pdf")},
+      {name:"Exam 4 Review — New Notes on Differential MOI Formula", url:f("Exam 4 Review/MOI Review Sheets/01c New notes on differential MOI formula and choices of dA.pdf")}
+    ],
+    cribsheets:[
+      {name:"Crib Sheet Page 1 (Exam 4)", url:f("Exam 4 Review/Crib Sheet page 1 (2).pdf")},
+      {name:"Crib Sheet Page 2 (Exam 4)", url:f("Exam 4 Review/Crib Sheet page 2 (2).pdf")}
+    ],
+    videos:[]
+  },
+  { num:"19", title:"Final Exam Review", topics:["Comprehensive Review"], worksheets:[], cribsheets:[], videos:[] }
+];
+
+// ── STATE ──────────────────────────────────────────────────────
+let activeFilter = 'all', modalContext = null;
+
+function loadSaved() {
+  try {
+    const saved = localStorage.getItem('statics_user_resources');
+    if (!saved) return;
+    JSON.parse(saved).forEach((u, i) => {
+      if (!UNITS[i]) return;
+      (u.worksheets||[]).forEach(r => UNITS[i].worksheets.push({...r, _user:true}));
+      (u.cribsheets||[]).forEach(r => UNITS[i].cribsheets.push({...r, _user:true}));
+      (u.videos||[]).forEach(r => UNITS[i].videos.push({...r, _user:true}));
+    });
+  } catch(e){}
+}
+function saveUserAdded() {
+  try {
+    const data = UNITS.map(u => ({
+      worksheets: u.worksheets.filter(r=>r._user),
+      cribsheets: u.cribsheets.filter(r=>r._user),
+      videos:     u.videos.filter(r=>r._user)
+    }));
+    localStorage.setItem('statics_user_resources', JSON.stringify(data));
+  } catch(e){}
+}
+
+// ── ICONS ──────────────────────────────────────────────────────
+const iconPDF = `<svg class="res-icon" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 7V3.5L18.5 9H13zM8 13h2v2H8v-2zm0 4h2v2H8v-2zm4-4h4v2h-4v-2zm0 4h4v2h-4v-2z"/></svg>`;
+const iconVid = `<svg class="res-icon" viewBox="0 0 24 24"><path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/></svg>`;
+
+// ── RENDER ─────────────────────────────────────────────────────
+function renderItems(items, cls, icon, ui, key) {
+  if (!items.length) return `<span class="placeholder-row">None yet — add one below.</span>`;
+  return items.map((r,ri) =>
+    `<a class="res-item ${cls}" href="${r.url}" target="_blank">${icon}<span>${r.name}</span>${r._user?`<button class="rm-btn" onclick="removeResource(event,${ui},'${key}',${ri})" title="Remove">×</button>`:''}</a>`
+  ).join('');
+}
+
+function renderUnit(u, i) {
+  const wc=u.worksheets.length, cc=u.cribsheets.length, vc=u.videos.length;
+  const badges=[wc?`<span class="count-badge count-ws">${wc} WS</span>`:'', cc?`<span class="count-badge count-cs">${cc} CS</span>`:'', vc?`<span class="count-badge count-vid">${vc} ▶</span>`:''].join('');
+  return `<div class="unit" id="unit-${i}">
+    <div class="unit-header" onclick="toggleUnit(${i})">
+      <span class="unit-num">Unit ${u.num}</span>
+      <span class="unit-title">${u.title}</span>
+      <span class="unit-meta">${badges}</span>
+      <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
+    <div class="unit-body">
+      <div class="topics-list">
+        <div class="topics-label">Topics Covered</div>
+        <div class="topics-pills">${u.topics.map(t=>`<span class="topic-pill">${t}</span>`).join('')}</div>
+      </div>
+      <div class="resources">
+        <div class="res-section"><div class="res-label">📄 Worksheets &amp; Problem Sets</div><div class="res-items">${renderItems(u.worksheets,'worksheet',iconPDF,i,'worksheets')}</div></div>
+        <div class="res-section"><div class="res-label">📋 Crib Sheets</div><div class="res-items">${renderItems(u.cribsheets,'cribsheet',iconPDF,i,'cribsheets')}</div></div>
+        <div class="res-section"><div class="res-label">▶ Video Lectures</div><div class="res-items">${renderItems(u.videos,'video',iconVid,i,'videos')}</div></div>
+        <div class="add-resource">
+          <button class="add-btn ws" onclick="openModal(${i},'worksheet')">+ Worksheet</button>
+          <button class="add-btn cs" onclick="openModal(${i},'cribsheet')">+ Crib Sheet</button>
+          <button class="add-btn vid" onclick="openModal(${i},'video')">+ Video</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderAll() {
+  document.getElementById('units-container').innerHTML = UNITS.map(renderUnit).join('');
+  applyFilter();
+}
+
+function toggleUnit(i) { document.getElementById(`unit-${i}`).classList.toggle('open'); }
+
+function setFilter(type, btn) {
+  activeFilter = type;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active'); applyFilter();
+}
+function applyFilter() {
+  const q = document.getElementById('search').value.toLowerCase();
+  UNITS.forEach((u,i)=>{
+    const el = document.getElementById(`unit-${i}`); if(!el) return;
+    let show = true;
+    if(activeFilter==='worksheet' && !u.worksheets.length) show=false;
+    if(activeFilter==='cribsheet' && !u.cribsheets.length) show=false;
+    if(activeFilter==='video'     && !u.videos.length)     show=false;
+    if(q && !(u.title+' '+u.topics.join(' ')).toLowerCase().includes(q)) show=false;
+    el.classList.toggle('hidden',!show);
+  });
+}
+function filterUnits(){ applyFilter(); }
+
+function openModal(ui, type) {
+  modalContext={ui,type};
+  const cfg={worksheet:['Add Worksheet / Problem Set','Title','PDF URL or Google Drive link'],cribsheet:['Add Crib Sheet','Title','PDF URL or Google Drive link'],video:['Add Video Lecture','Title','YouTube or video URL']};
+  const [title,nl,ul]=cfg[type];
+  document.getElementById('modal-title').textContent=title;
+  document.getElementById('label-name').textContent=nl;
+  document.getElementById('label-url').textContent=ul;
+  document.getElementById('input-name').value='';
+  document.getElementById('input-url').value='';
+  document.getElementById('modal').classList.add('open');
+  setTimeout(()=>document.getElementById('input-name').focus(),100);
+}
+function closeModal(){ document.getElementById('modal').classList.remove('open'); modalContext=null; }
+function saveResource(){
+  const name=document.getElementById('input-name').value.trim(), url=document.getElementById('input-url').value.trim();
+  if(!name||!url){alert('Please fill in both fields.');return;}
+  const {ui,type}=modalContext;
+  const key=type==='worksheet'?'worksheets':type==='cribsheet'?'cribsheets':'videos';
+  UNITS[ui][key].push({name,url,_user:true});
+  saveUserAdded(); closeModal(); renderAll();
+  setTimeout(()=>{ const el=document.getElementById(`unit-${ui}`); if(el&&!el.classList.contains('open'))el.classList.add('open'); },50);
+}
+function removeResource(ev,ui,key,ri){
+  ev.preventDefault(); ev.stopPropagation();
+  if(!confirm('Remove this resource?'))return;
+  UNITS[ui][key].splice(ri,1);
+  saveUserAdded(); renderAll();
+  setTimeout(()=>{ const el=document.getElementById(`unit-${ui}`); if(el&&!el.classList.contains('open'))el.classList.add('open'); },50);
+}
+document.getElementById('modal').addEventListener('click',function(e){if(e.target===this)closeModal();});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape')closeModal();
+  if(e.key==='Enter'&&document.getElementById('modal').classList.contains('open'))saveResource();
+});
+
+loadSaved();
+renderAll();
+</script>
+</body>
+</html>
